@@ -92,25 +92,27 @@ updateModel model update =
           in
           { model | matrix <- newMatrix }
 
-timeAtStartOfProgram : Signal Time
-timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
+seedFromInitialTime : Signal Random.Seed
+seedFromInitialTime = Signal.map (\(time,()) -> Random.initialSeed (round (Time.inMilliseconds time))) (Time.timestamp (Signal.constant ()))
 
-type WithInitialUpdate =
-      Initial Time
-    | Update Update
+updatesAndInitialSeed : Signal (Random.Seed, Update)
+updatesAndInitialSeed = Signal.map2 (\x y -> (x,y)) seedFromInitialTime (Signal.subscribe updates)
 
-withInitialUpdate : Signal WithInitialUpdate
-withInitialUpdate = Signal.merge (Signal.map (\time -> Debug.log "foo" (Initial time)) timeAtStartOfProgram) (Signal.map (\update -> Update update) (Signal.subscribe updates))
+updateModelWithSeed : (Random.Seed, Update) -> Maybe Model -> Maybe Model
+updateModelWithSeed (seed, update) mmodel =
+  let model =
+     case mmodel of
+        Nothing -> initialize seed
+        Just x -> x
+  in
+  Just (updateModel model update)
 
-updateModelWithInitialUpdate : WithInitialUpdate -> Model -> Model
-updateModelWithInitialUpdate update model =
-  case (Debug.log "update" update) of
-    Initial time -> initialize (Random.initialSeed (round (Time.inMilliseconds time)))
-    Update Regenerate -> initialize (Random.initialSeed 0)
-    Update update -> updateModel model update
-
-models : Signal Model
-models = Signal.foldp updateModelWithInitialUpdate (initialize (Random.initialSeed 0)) withInitialUpdate
+models : Signal (Maybe Model)
+models = Signal.foldp updateModelWithSeed Nothing updatesAndInitialSeed
 
 main : Signal Html
-main = Signal.map toHtml models
+main = Signal.map toHtml (Signal.map2 (\seed mmodel ->
+   case mmodel of
+      Nothing -> initialize seed
+      Just x -> x
+   ) seedFromInitialTime models)
