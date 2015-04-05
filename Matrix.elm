@@ -73,10 +73,44 @@ toHtml m =
       Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipColumn i))] [Html.text (toString sum)])
    in
    Html.table [] (List.append (Array.toList numberRows) [Html.tr [] (Array.toList colSumsRow)])
-      
+
+updateModel : Model -> Update -> Model
+updateModel model update = 
+  case update of
+     Regenerate -> model
+     FlipRow i ->
+        case Array.get i model.matrix of
+           -- shouldn't happen
+           Nothing -> model
+           Just row -> { model | matrix <- Array.set i (Array.map (\x -> (-x)) row) model.matrix }
+     FlipColumn i ->
+         let newMatrix = Array.map (\row ->
+              case Array.get i row of
+                -- shouldn't happen
+                Nothing -> row
+                Just x -> Array.set i (-x) row) model.matrix
+          in
+          { model | matrix <- newMatrix }
+
 timeAtStartOfProgram : Signal Time
 timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
 
+type WithInitialUpdate =
+      Initial Time
+    | Update Update
+
+withInitialUpdate : Signal WithInitialUpdate
+withInitialUpdate = Signal.map (\time -> Initial time) timeAtStartOfProgram
+
+updateModelWithInitialUpdate : WithInitialUpdate -> Model -> Model
+updateModelWithInitialUpdate update model =
+  case (Debug.log "update" update) of
+    Initial time -> initialize (Random.initialSeed (round (Time.inMilliseconds time)))
+    Update Regenerate -> initialize (Random.initialSeed 0)
+    Update update -> updateModel model update
+
+models : Signal Model
+models = Signal.foldp updateModelWithInitialUpdate { matrix = Array.empty, seed = Random.initialSeed 0, dimension = dimension } withInitialUpdate
+
 main : Signal Html
-main = Signal.map (\time -> 
-     toHtml (initialize (Random.initialSeed (round (Time.inMilliseconds time))))) timeAtStartOfProgram
+main = Signal.map toHtml models
