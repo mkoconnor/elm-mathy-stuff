@@ -1,5 +1,6 @@
 import Text
 import Graphics.Element (Element)
+import TheNumber
 
 main : Element
-main = Text.asText 45
+main = Text.asText TheNumber.theNumber
