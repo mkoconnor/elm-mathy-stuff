@@ -45,17 +45,17 @@ type Update =
 updates : Signal.Channel Update
 updates = Signal.channel Regenerate
 
-alignRight : Html.Attribute
-alignRight = Html.Attributes.align "right"
+tdAttrs : List Html.Attribute 
+tdAttrs = [Html.Attributes.align "right", Html.Attributes.style [("width","2em")]]
 
 toHtml : Model -> Html
 toHtml m =
    let numberRows = Array.indexedMap (\i row ->
       let htmlRow = List.map (\i -> 
-            Html.td [alignRight] [Html.text (toString i)]) (Array.toList row)
+            Html.td tdAttrs [Html.text (toString i)]) (Array.toList row)
       in
       let sum = Array.foldl (\i acc -> i + acc) 0 row in
-      let sumTd = Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipRow i))] [Html.text (toString sum)] in
+      let sumTd = Html.td (Html.Events.onClick (Signal.send updates (FlipRow i)) :: tdAttrs) [Html.text (toString sum)] in
       Html.tr [] (List.append htmlRow [sumTd])) m.matrix
    in
    let get_or_zero i j ar =
@@ -70,7 +70,7 @@ toHtml m =
    let colSumsRow = Array.initialize m.dimension (\i ->
       let col = Array.initialize m.dimension (\j -> get_or_zero j i m.matrix) in
       let sum = Array.foldl (\i acc -> i + acc) 0 col in
-      Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipColumn i))] [Html.text (toString sum)])
+      Html.td (Html.Events.onClick (Signal.send updates (FlipColumn i)) :: tdAttrs) [Html.text (toString sum)])
    in
    Html.div []
      [Html.table [] (List.append (Array.toList numberRows) [Html.tr [] (Array.toList colSumsRow)]),
