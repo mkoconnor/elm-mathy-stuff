@@ -1,4 +1,6 @@
 import Html
+import Html.Attributes
+import Html (Html)
 import Text
 import Graphics.Element as G
 import Graphics.Element (Element)
@@ -13,23 +15,15 @@ import Debug
 
 type Model = Model { numbers : Array (Array Int) }
 
-toElement : Model -> Element
-toElement (Model r) =
-   let elements = Array.toList (Array.map (\arr ->
-      (Array.toList (Array.map (\x -> Text.rightAligned (Text.fromString (toString x))) arr))
-      ) r.numbers)
-   in
-   let maxWidth = List.foldl (\l width ->
-      List.foldl (\x width -> max width (Debug.log "widthof" (G.widthOf x))) width l
-      ) 0 elements
-   in
-   let maxHeight = List.foldl (\l height ->
-      List.foldl (\x height -> max height (Debug.log "heightof" (G.heightOf x))) height l
-      ) 0 elements
-   in
-   let adjustedElements = List.map (\l -> List.map (\x -> G.size (maxWidth + 10) (maxHeight + 10) x) l) elements
-   in
-   G.flow G.down (List.map (\l -> G.flow G.right l) adjustedElements)
+toHtml : Model -> Html
+toHtml (Model r) =
+    Html.table [] (
+    List.map (\a ->
+       Html.tr [] (
+          List.map (\i -> Html.td [Html.Attributes.align "right"] [Html.text (toString i)])
+           (Array.toList a)
+        ))
+     (Array.toList r.numbers))
 
 toMatrix : { length:Int, list:List a } -> Array (Array a)
 toMatrix r =
@@ -58,6 +52,6 @@ initialize r =
 timeAtStartOfProgram : Signal Time
 timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
 
-main : Signal Element
+main : Signal Html
 main = Signal.map (\time -> 
-     toElement (initialize { seed = Random.initialSeed (round (Time.inMilliseconds time)), length = 5})) timeAtStartOfProgram
+     toHtml (initialize { seed = Random.initialSeed (round (Time.inMilliseconds time)), length = 5})) timeAtStartOfProgram
