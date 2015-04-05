@@ -1,4 +1,5 @@
 import Text
+import Graphics.Element as G
 import Graphics.Element (Element)
 import Array
 import Array (Array)
@@ -9,6 +10,14 @@ import Time (Time)
 import Signal
 
 type Model = Model { numbers : Array (Array Int) }
+
+toElement : Model -> Element
+toElement (Model r) =
+   let elements = Array.map (\arr ->
+      G.flow G.right (Array.toList (Array.map (\x -> Text.plainText (toString x)) arr))
+      ) r.numbers
+   in
+   G.flow G.down (Array.toList elements)
 
 toMatrix : { length:Int, list:List a } -> Array (Array a)
 toMatrix r =
@@ -37,5 +46,6 @@ initialize r =
 timeAtStartOfProgram : Signal Time
 timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
 
-main : Element
-main = Text.asText (initialize { seed = Random.initialSeed 1235, length = 5})
+main : Signal Element
+main = Signal.map (\time -> 
+     toElement (initialize { seed = Random.initialSeed (round (Time.inMilliseconds time)), length = 5})) timeAtStartOfProgram
