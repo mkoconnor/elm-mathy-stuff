@@ -100,7 +100,7 @@ type WithInitialUpdate =
     | Update Update
 
 withInitialUpdate : Signal WithInitialUpdate
-withInitialUpdate = Signal.map (\time -> Initial time) timeAtStartOfProgram
+withInitialUpdate = Signal.map (\time -> Debug.log "foo" (Initial time)) timeAtStartOfProgram
 
 updateModelWithInitialUpdate : WithInitialUpdate -> Model -> Model
 updateModelWithInitialUpdate update model =
@@ -110,7 +110,7 @@ updateModelWithInitialUpdate update model =
     Update update -> updateModel model update
 
 models : Signal Model
-models = Signal.foldp updateModelWithInitialUpdate { matrix = Array.empty, seed = Random.initialSeed 0, dimension = dimension } withInitialUpdate
+models = Signal.foldp updateModelWithInitialUpdate (initialize (Random.initialSeed 0)) withInitialUpdate
 
 main : Signal Html
 main = Signal.map toHtml models
