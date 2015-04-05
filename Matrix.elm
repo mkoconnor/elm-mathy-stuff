@@ -1,3 +1,4 @@
+import Html
 import Text
 import Graphics.Element as G
 import Graphics.Element (Element)
@@ -8,16 +9,27 @@ import List
 import Time
 import Time (Time)
 import Signal
+import Debug
 
 type Model = Model { numbers : Array (Array Int) }
 
 toElement : Model -> Element
 toElement (Model r) =
-   let elements = Array.map (\arr ->
-      G.flow G.right (Array.toList (Array.map (\x -> Text.plainText (toString x)) arr))
-      ) r.numbers
+   let elements = Array.toList (Array.map (\arr ->
+      (Array.toList (Array.map (\x -> Text.rightAligned (Text.fromString (toString x))) arr))
+      ) r.numbers)
    in
-   G.flow G.down (Array.toList elements)
+   let maxWidth = List.foldl (\l width ->
+      List.foldl (\x width -> max width (Debug.log "widthof" (G.widthOf x))) width l
+      ) 0 elements
+   in
+   let maxHeight = List.foldl (\l height ->
+      List.foldl (\x height -> max height (Debug.log "heightof" (G.heightOf x))) height l
+      ) 0 elements
+   in
+   let adjustedElements = List.map (\l -> List.map (\x -> G.size (maxWidth + 10) (maxHeight + 10) x) l) elements
+   in
+   G.flow G.down (List.map (\l -> G.flow G.right l) adjustedElements)
 
 toMatrix : { length:Int, list:List a } -> Array (Array a)
 toMatrix r =
