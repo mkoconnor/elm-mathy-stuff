@@ -4,6 +4,9 @@ import Array
 import Array (Array)
 import Random
 import List
+import Time
+import Time (Time)
+import Signal
 
 type Model = Model { numbers : Array (Array Int) }
 
@@ -31,6 +34,8 @@ initialize r =
            in
            Model { numbers = toMatrix { list = numbers, length = r.length } }
 
+timeAtStartOfProgram : Signal Time
+timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
 
 main : Element
-main = Text.asText (initialize { seed = Random.initialSeed 1234, length = 5})
+main = Text.asText (initialize { seed = Random.initialSeed 1235, length = 5})
