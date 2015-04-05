@@ -28,7 +28,7 @@ initialize seed =
       then ([], seed)
       else
         let
-          (nextSeed, thisRow) =
+          (thisRow, nextSeed) =
              Random.generate (Random.list dimension intGenerator) seed
         in
         let (nextRows, finalSeed) = matrixRows (rowsToProduce - 1) nextSeed in
@@ -50,14 +50,13 @@ alignRight = Html.Attributes.align "right"
 
 toHtml : Model -> Html
 toHtml m =
-   let numberRows = Array.indexedMap m.matrix (\i row ->
+   let numberRows = Array.indexedMap (\i row ->
       let htmlRow = List.map (\i -> 
             Html.td [alignRight] [Html.text (toString i)]) (Array.toList row)
       in
       let sum = Array.foldl (\i acc -> i + acc) 0 row in
       let sumTd = Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipRow i))] [Html.text (toString sum)] in
-      Html.tr [] (List.append row [sumTd])
-   )
+      Html.tr [] (List.append htmlRow [sumTd])) m.matrix
    in
    let get_or_zero i j ar =
       -- the nothing cases shouldn't happen
@@ -73,7 +72,7 @@ toHtml m =
       let sum = Array.foldl (\i acc -> i + acc) 0 col in
       Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipColumn i))] [Html.text (toString sum)])
    in
-   Html.table [] (List.append numberRows (Html.tr [] colSumsRow))      
+   Html.table [] (List.append (Array.toList numberRows) [Html.tr [] (Array.toList colSumsRow)])
       
 timeAtStartOfProgram : Signal Time
 timeAtStartOfProgram = Signal.map (\(time,()) -> time) (Time.timestamp (Signal.constant ()))
