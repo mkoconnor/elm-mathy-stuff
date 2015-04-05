@@ -72,12 +72,16 @@ toHtml m =
       let sum = Array.foldl (\i acc -> i + acc) 0 col in
       Html.td [alignRight, Html.Events.onClick (Signal.send updates (FlipColumn i))] [Html.text (toString sum)])
    in
-   Html.table [] (List.append (Array.toList numberRows) [Html.tr [] (Array.toList colSumsRow)])
+   Html.div []
+     [Html.table [] (List.append (Array.toList numberRows) [Html.tr [] (Array.toList colSumsRow)]),
+      Html.button [Html.Events.onClick (Signal.send updates Regenerate)] [Html.text "Regenerate Matrix"]
+      ]
+
 
 updateModel : Model -> Update -> Model
 updateModel model update = 
   case update of
-     Regenerate -> model
+     Regenerate -> initialize model.seed
      FlipRow i ->
         case Array.get i model.matrix of
            -- shouldn't happen
