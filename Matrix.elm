@@ -100,7 +100,7 @@ type WithInitialUpdate =
     | Update Update
 
 withInitialUpdate : Signal WithInitialUpdate
-withInitialUpdate = Signal.map (\time -> Debug.log "foo" (Initial time)) timeAtStartOfProgram
+withInitialUpdate = Signal.merge (Signal.map (\time -> Debug.log "foo" (Initial time)) timeAtStartOfProgram) (Signal.map (\update -> Update update) (Signal.subscribe updates))
 
 updateModelWithInitialUpdate : WithInitialUpdate -> Model -> Model
 updateModelWithInitialUpdate update model =
