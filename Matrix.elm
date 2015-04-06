@@ -93,11 +93,8 @@ updateModel model update =
           in
           { model | matrix <- newMatrix }
 
-seedFromInitialTime : Signal Random.Seed
-seedFromInitialTime = Signal.map (\(time,()) -> Random.initialSeed (round (Time.inMilliseconds time))) (Time.timestamp (Signal.constant ()))
-
 models : Signal Model
-models = Utils.foldp (flip updateModel) (Signal.map initialize seedFromInitialTime) (Signal.subscribe updates)
+models = Utils.foldp (flip updateModel) (Signal.map initialize Utils.seedFromInitialTime) (Signal.subscribe updates)
 
 main : Signal Html.Html
 main = Signal.map toHtml models
