@@ -8,6 +8,8 @@ import Signal
 import Color
 import Array
 import Random
+import Utils
+import Debug
 type alias Array a = Array.Array a
 
 type alias Model = { indices : Array Int, seed:Random.Seed }
@@ -26,7 +28,7 @@ initialize seed =
         | sum < 0  -> List.map (\x -> (-x)) vertices
         | otherwise -> List.map (\x -> x + 1) vertices
   in
-  { indices = vertices', seed = seed'' }
+  { indices = Array.fromList vertices', seed = seed'' }
 
 updateModel : Update -> Model -> Model
 updateModel update model = 
@@ -54,19 +56,19 @@ updateModel update model =
                      { model | indices <- newIndices }
 
 updates : Signal.Channel Update
-updates = Signal.Channel Regenerate
+updates = Signal.channel Regenerate
 
 toElement : Model -> {width:Int, height:Int} -> List C.Form
 toElement model dims = 
   let maxdim = toFloat (min dims.width dims.height) / 2 in
   let ngonRadius = maxdim * 0.8 in
   let outerRadius = maxdim * 0.8 * 1.1 in
-  let length = Array.length Array.indices in
+  let length = Array.length model.indices in
   let withCoords = List.indexedMap (\i index ->
      let angle  = 2 * pi * (toFloat i)/(toFloat length) in
      let coords = (cos angle, sin angle) in
-     let element = I.clickable (Signal.send updates (FlipIndex index) (Text.asText index) in
-     (coords, element)) model.indices
+     let element = I.clickable (Signal.send updates (FlipIndex i)) (Text.asText index) in
+     (coords, element)) (Array.toList model.indices)
   in
   let shape = C.polygon (List.map (\((x,y), _) -> (x * ngonRadius, y * ngonRadius)) withCoords)
   in
@@ -76,6 +78,6 @@ toElement model dims =
   C.filled Color.lightBlue shape :: elements
 
 models : Signal Model
-model = Utils.foldp updateModel (Signal.map initialize Utils.seedFromInitialTime) (Signal.subscribe updates)
+models = Utils.foldp updateModel (Signal.map initialize Utils.seedFromInitialTime) (Signal.subscribe updates)
 
-main = Signal.map2 (\(width, height) model -> C.collage width height (toElement model {width = width, height = height })) Window.dimensions
+main = Signal.map2 (\(width, height) model -> C.collage width height (toElement model {width = width, height = height })) Window.dimensions models
