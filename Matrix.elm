@@ -1,18 +1,14 @@
 import Html
 import Html.Attributes
 import Html.Events
-import Html (Html)
 import Text
-import Graphics.Element as G
-import Graphics.Element (Element)
 import Array
-import Array (Array)
 import Random
 import List
 import Time
-import Time (Time)
 import Signal
-import Debug
+
+type alias Array a = Array.Array a
 
 -- [dimension] is the common length of the rows and columns of [matrix]
 type alias Model = { matrix : Array (Array Int), seed : Random.Seed, dimension : Int }
@@ -48,7 +44,7 @@ updates = Signal.channel Regenerate
 tdAttrs : List Html.Attribute 
 tdAttrs = [Html.Attributes.align "right", Html.Attributes.style [("width","2em")]]
 
-toHtml : Model -> Html
+toHtml : Model -> Html.Html
 toHtml m =
    let numberRows = Array.indexedMap (\i row ->
       let htmlRow = List.map (\i -> 
@@ -114,7 +110,7 @@ updateModelWithSeed (seed, update) mmodel =
 models : Signal (Maybe Model)
 models = Signal.foldp updateModelWithSeed Nothing updatesAndInitialSeed
 
-main : Signal Html
+main : Signal Html.Html
 main = Signal.map toHtml (Signal.map2 (\seed mmodel ->
    case mmodel of
       Nothing -> initialize seed
