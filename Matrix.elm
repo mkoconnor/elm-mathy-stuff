@@ -7,6 +7,7 @@ import Random
 import List
 import Time
 import Signal
+import Utils
 
 type alias Array a = Array.Array a
 
@@ -95,24 +96,8 @@ updateModel model update =
 seedFromInitialTime : Signal Random.Seed
 seedFromInitialTime = Signal.map (\(time,()) -> Random.initialSeed (round (Time.inMilliseconds time))) (Time.timestamp (Signal.constant ()))
 
-updatesAndInitialSeed : Signal (Random.Seed, Update)
-updatesAndInitialSeed = Signal.map2 (\x y -> (x,y)) seedFromInitialTime (Signal.subscribe updates)
-
-updateModelWithSeed : (Random.Seed, Update) -> Maybe Model -> Maybe Model
-updateModelWithSeed (seed, update) mmodel =
-  let model =
-     case mmodel of
-        Nothing -> initialize seed
-        Just x -> x
-  in
-  Just (updateModel model update)
-
-models : Signal (Maybe Model)
-models = Signal.foldp updateModelWithSeed Nothing updatesAndInitialSeed
+models : Signal Model
+models = Utils.foldp (flip updateModel) (Signal.map initialize seedFromInitialTime) (Signal.subscribe updates)
 
 main : Signal Html.Html
-main = Signal.map toHtml (Signal.map2 (\seed mmodel ->
-   case mmodel of
-      Nothing -> initialize seed
-      Just x -> x
-   ) seedFromInitialTime models)
+main = Signal.map toHtml models
