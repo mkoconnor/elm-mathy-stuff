@@ -70,12 +70,21 @@ updateModel update model =
      [] -> if update.clicked
            then { drawn = [update.cursor], next = update.cursor }
            else { drawn = [], next = update.cursor }
-     lastPoint :: _ ->
-           let segments = listToPairs model.drawn in
-           let newSegment = (lastPoint, update.cursor) in
-           if List.any (intersects newSegment) segments
+     lastPoint :: earlierPoints ->
+          let collinearWithLastSegment =
+             case earlierPoints of
+                [] -> False
+                secondLastPoint :: _ ->
+                   ccw lastPoint secondLastPoint update.cursor == Collinear
+           in
+           if collinearWithLastSegment
            then { model | next <- update.cursor }
-           else { drawn = update.cursor :: model.drawn, next = update.cursor }
+           else 
+             let segments = listToPairs earlierPoints in
+             let newSegment = (lastPoint, update.cursor) in
+             if List.any (intersects newSegment) segments
+             then { model | next <- update.cursor }
+             else { drawn = update.cursor :: model.drawn, next = update.cursor }
 
 toFloatPoint : {width : Int, height: Int} -> Point -> (Float, Float)
 toFloatPoint {width, height} (x,y) = 
