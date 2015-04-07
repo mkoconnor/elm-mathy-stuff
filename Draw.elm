@@ -6,6 +6,7 @@ import List
 import Mouse
 import Window
 import Maybe
+import Time
 
 type alias Point = (Int, Int)
 
@@ -131,7 +132,7 @@ toElement model { width, height } =
    C.collage width height forms
 
 updates : Signal Update
-updates = Signal.merge (Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> {cursor=point, clicked=False}) Mouse.position)
+updates = Signal.merge (Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> {cursor=point, clicked=False}) (Signal.sampleOn (Time.every (10 * Time.millisecond)) Mouse.position))
 
 models : Signal Model
 models = Signal.foldp updateModel {drawn = [], next = (0,0), closed = False, firstPoint = Nothing} updates
