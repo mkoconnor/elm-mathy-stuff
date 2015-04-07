@@ -55,6 +55,8 @@ intersects (ap,aq) (bp, bq) =
       oneDimIntersect (fst ap, fst aq) (fst bp, fst bq)
       && oneDimIntersect (snd ap, snd aq) (snd bp, snd bq)
 
+type alias Circle = { center : Int, radius : Float }
+
 listToPairs : List a -> List (a,a)
 listToPairs l =
   case l of
@@ -62,46 +64,60 @@ listToPairs l =
     _::[] -> []
     x::y::l' -> (x,y) :: listToPairs (y::l')
 
+listToPairsWrapAround l =
+  case l of
+    [] -> []
+    _::[] -> []
+    x::_::_ ->
+    let last = List.head (List.reverse l) in
+    (last,x) :: listToPairs l
+
 type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool }
 
 type alias Update = { cursor:Point, clicked: Bool }
 
 hitRadius = 5
 
+legalNextPoint : Model -> Point -> Bool
+legalNextPoint model point = 
+  case model.drawn of
+    [] -> True
+    lastPoint :: earlierPoints -> 
+      let collinearWithLastSegment =
+        case earlierPoints of
+           [] -> False
+           secondLastPoint :: _ ->
+              ccw lastPoint secondLastPoint point == Collinear
+      in
+      if collinearWithLastSegment
+      then False
+      else 
+        let segments = listToPairs earlierPoints in
+        let newSegment = (lastPoint, point) in
+        not (List.any (intersects newSegment) segments)
+
 updateModel : Update -> Model -> Model
 updateModel update model = 
   if model.closed
   then model
-  else if not update.clicked
-  then { model | next <- update.cursor }
+  else
+  let model' = { model | next <- update.cursor } in
+  if not update.clicked
+  then model'
   else 
-    case model.drawn of
-     [] -> { drawn = [update.cursor], next = update.cursor, closed = False, firstPoint = Just update.cursor }
-     lastPoint :: earlierPoints ->
-          let shouldClose =
-             case model.firstPoint of
-                Nothing -> False
-                Just firstPoint ->
-                  abs (fst update.cursor - fst firstPoint) < hitRadius && abs (snd update.cursor - snd firstPoint) < hitRadius
-          in
-          if shouldClose
-          then { model | closed <- True }
-          else
-            let collinearWithLastSegment =
-               case earlierPoints of
-                  [] -> False
-                  secondLastPoint :: _ ->
-                     ccw lastPoint secondLastPoint update.cursor == Collinear
-             in
-             if collinearWithLastSegment
-             then { model | next <- update.cursor }
-             else 
-               let segments = listToPairs earlierPoints in
-               let newSegment = (lastPoint, update.cursor) in
-               if List.any (intersects newSegment) segments
-               then { model | next <- update.cursor }
-               else
-                 { drawn = update.cursor :: model.drawn, next = update.cursor, closed = False, firstPoint = model.firstPoint }
+    if not (legalNextPoint model' update.cursor)
+    then model'
+    else 
+      let shouldClose =
+         case model'.firstPoint of
+            Nothing -> False
+            Just firstPoint ->
+              abs (fst update.cursor - fst firstPoint) < hitRadius && abs (snd update.cursor - snd firstPoint) < hitRadius
+      in
+      if shouldClose
+      then { model' | closed <- True }
+      else
+        { drawn = update.cursor :: model'.drawn, next = update.cursor, closed = False, firstPoint = Just (Maybe.withDefault update.cursor model'.firstPoint) }
 
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
