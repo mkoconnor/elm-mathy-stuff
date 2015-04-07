@@ -119,11 +119,14 @@ toElement model { width, height } =
            lastPoint :: _ -> [C.traced (C.dashed Color.black) (C.segment lastPoint (toFloatPoint model.next))]
       in    
       let first =
+         let circle point color = 
+           C.move (toFloatPoint point) (C.filled color (C.circle (toFloat hitRadius)))
+         in
          case model.firstPoint of
-            Nothing -> []
-            Just firstPoint -> [(C.move (toFloatPoint firstPoint) (C.filled Color.black (C.circle (toFloat hitRadius))))]
+            Nothing -> circle model.next Color.gray
+            Just firstPoint -> circle firstPoint Color.black
       in
-      List.append first (drawn :: next)
+      first :: drawn :: next
    in
    C.collage width height forms
 
