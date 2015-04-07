@@ -5,6 +5,7 @@ import Color
 import List
 import Mouse
 import Window
+import Maybe
 
 type alias Point = (Int, Int)
 
@@ -60,32 +61,46 @@ listToPairs l =
     _::[] -> []
     x::y::l' -> (x,y) :: listToPairs (y::l')
 
-type alias Model = { drawn:List Point, next:Point }
+type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool }
 
 type alias Update = { cursor:Point, clicked: Bool }
-  
+
+hitRadius = 5
+
 updateModel : Update -> Model -> Model
 updateModel update model = 
-  if not update.clicked
+  if model.closed
+  then model
+  else if not update.clicked
   then { model | next <- update.cursor }
   else 
     case model.drawn of
-     [] -> { drawn = [update.cursor], next = update.cursor }
+     [] -> { drawn = [update.cursor], next = update.cursor, closed = False, firstPoint = Just update.cursor }
      lastPoint :: earlierPoints ->
-          let collinearWithLastSegment =
-             case earlierPoints of
-                [] -> False
-                secondLastPoint :: _ ->
-                   ccw lastPoint secondLastPoint update.cursor == Collinear
-           in
-           if collinearWithLastSegment
-           then { model | next <- update.cursor }
-           else 
-             let segments = listToPairs earlierPoints in
-             let newSegment = (lastPoint, update.cursor) in
-             if List.any (intersects newSegment) segments
+          let shouldClose =
+             case model.firstPoint of
+                Nothing -> False
+                Just firstPoint ->
+                  abs (fst update.cursor - fst firstPoint) < hitRadius && abs (snd update.cursor - snd firstPoint) < hitRadius
+          in
+          if shouldClose
+          then { model | closed <- True }
+          else
+            let collinearWithLastSegment =
+               case earlierPoints of
+                  [] -> False
+                  secondLastPoint :: _ ->
+                     ccw lastPoint secondLastPoint update.cursor == Collinear
+             in
+             if collinearWithLastSegment
              then { model | next <- update.cursor }
-             else { drawn = update.cursor :: model.drawn, next = update.cursor }
+             else 
+               let segments = listToPairs earlierPoints in
+               let newSegment = (lastPoint, update.cursor) in
+               if List.any (intersects newSegment) segments
+               then { model | next <- update.cursor }
+               else
+                 { drawn = update.cursor :: model.drawn, next = update.cursor, closed = False, firstPoint = model.firstPoint }
 
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
@@ -93,18 +108,29 @@ toElement model { width, height } =
     (toFloat x - (toFloat width)/2, (toFloat height)/2 - toFloat y)
   in
   let floatDrawn = List.map toFloatPoint model.drawn in
-  let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
-  let next =
-    case floatDrawn of
-       [] -> []
-       lastPoint :: _ -> [C.traced (C.dashed Color.black) (C.segment lastPoint (toFloatPoint model.next))]
-  in    
-  C.collage width height (drawn :: next)
+  let forms = 
+    if model.closed
+    then [C.filled Color.lightBlue (C.polygon floatDrawn)]
+    else 
+      let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
+      let next =
+        case floatDrawn of
+           [] -> []
+           lastPoint :: _ -> [C.traced (C.dashed Color.black) (C.segment lastPoint (toFloatPoint model.next))]
+      in    
+      let first =
+         case model.firstPoint of
+            Nothing -> []
+            Just firstPoint -> [(C.move (toFloatPoint firstPoint) (C.filled Color.black (C.circle (toFloat hitRadius))))]
+      in
+      List.append first (drawn :: next)
+   in
+   C.collage width height forms
 
 updates : Signal Update
 updates = Signal.merge (Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> {cursor=point, clicked=False}) Mouse.position)
 
 models : Signal Model
-models = Signal.foldp updateModel {drawn = [], next = (0,0)} updates
+models = Signal.foldp updateModel {drawn = [], next = (0,0), closed = False, firstPoint = Nothing} updates
 
 main = Signal.map2 (\model (width, height) -> toElement model {width=width,height=height}) models Window.dimensions
