@@ -72,7 +72,7 @@ toElement model dims =
   let withCoords = List.indexedMap (\i index ->
      let angle  = 2 * pi * (toFloat i)/(toFloat length) in
      let coords = (cos angle, sin angle) in
-     let element = I.clickable (Signal.send updates (FlipIndex i)) (Text.asText index) in
+     let element = I.clickable (Signal.send updates (FlipIndex i)) (Text.centered (Text.color (if index < 0 then Color.red else Color.green) (Text.fromString (toString index)))) in
      (coords, element)) (Array.toList model.indices)
   in
   let shape = C.polygon (List.map (\((x,y), _) -> (x * ngonRadius, y * ngonRadius)) withCoords)
