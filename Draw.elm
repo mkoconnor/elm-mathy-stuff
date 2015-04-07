@@ -1,8 +1,10 @@
 import Signal
 import Graphics.Collage as C
-import Graphics.Collage as E
+import Graphics.Element as E
 import Color
 import List
+import Mouse
+import Window
 
 type alias Point = (Int, Int)
 
@@ -58,7 +60,7 @@ listToPairs l =
     _::[] -> []
     x::y::l' -> (x,y) :: listToPairs (y::l')
 
-type alias Model = { drawn:Point List, next:Point }
+type alias Model = { drawn:List Point, next:Point }
 
 type alias Update = { cursor:Point, clicked: Bool }
   
@@ -73,10 +75,21 @@ updateModel update model =
            let newSegment = (lastPoint, update.cursor) in
            if List.any (intersects newSegment) segments
            then { model | next <- update.cursor }
-           else { drawn = update.cursor :: model.draw, next = update.cursor }
+           else { drawn = update.cursor :: model.drawn, next = update.cursor }
+
+toFloatPoint : {width : Int, height: Int} -> Point -> (Float, Float)
+toFloatPoint {width, height} (x,y) = 
+  (toFloat x - (toFloat width)/2, (toFloat height)/2 - toFloat y)
 
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
-  let toFloatPoint (x,y) = (toFloat x - (toFloat width)/2, (toFloat height)/2 - y)
-  in
-  C.traced (C.solid Color.black) (List.map toFloatPoint (listToPairs model.drawn))
+  C.collage width height [
+    C.traced (C.solid Color.black) (C.path (List.map (toFloatPoint {width=width,height=height}) model.drawn))]
+
+updates : Signal Update
+updates = Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)
+
+models : Signal Model
+models = Signal.foldp updateModel {drawn = [], next = (0,0)} updates
+
+main = Signal.map2 (\model (width, height) -> toElement model {width=width,height=height}) models Window.dimensions
