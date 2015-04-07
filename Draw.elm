@@ -66,10 +66,11 @@ type alias Update = { cursor:Point, clicked: Bool }
   
 updateModel : Update -> Model -> Model
 updateModel update model = 
-  case model.drawn of
-     [] -> if update.clicked
-           then { drawn = [update.cursor], next = update.cursor }
-           else { drawn = [], next = update.cursor }
+  if not update.clicked
+  then { model | next <- update.cursor }
+  else 
+    case model.drawn of
+     [] -> { drawn = [update.cursor], next = update.cursor }
      lastPoint :: earlierPoints ->
           let collinearWithLastSegment =
              case earlierPoints of
@@ -86,17 +87,22 @@ updateModel update model =
              then { model | next <- update.cursor }
              else { drawn = update.cursor :: model.drawn, next = update.cursor }
 
-toFloatPoint : {width : Int, height: Int} -> Point -> (Float, Float)
-toFloatPoint {width, height} (x,y) = 
-  (toFloat x - (toFloat width)/2, (toFloat height)/2 - toFloat y)
-
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
-  C.collage width height [
-    C.traced (C.solid Color.black) (C.path (List.map (toFloatPoint {width=width,height=height}) model.drawn))]
+  let toFloatPoint (x,y) = 
+    (toFloat x - (toFloat width)/2, (toFloat height)/2 - toFloat y)
+  in
+  let floatDrawn = List.map toFloatPoint model.drawn in
+  let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
+  let next =
+    case floatDrawn of
+       [] -> []
+       lastPoint :: _ -> [C.traced (C.dashed Color.black) (C.segment lastPoint (toFloatPoint model.next))]
+  in    
+  C.collage width height (drawn :: next)
 
 updates : Signal Update
-updates = Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)
+updates = Signal.merge (Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> {cursor=point, clicked=False}) Mouse.position)
 
 models : Signal Model
 models = Signal.foldp updateModel {drawn = [], next = (0,0)} updates
