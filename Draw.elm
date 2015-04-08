@@ -137,7 +137,7 @@ toElement model { width, height } =
   let floatDrawn = List.map toFloatPoint model.drawn in
   let forms = 
     if model.closed
-    then [C.filled Color.lightBlue (C.polygon floatDrawn)]
+    then [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn])]
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
       let next =
