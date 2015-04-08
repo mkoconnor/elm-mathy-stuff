@@ -89,7 +89,7 @@ listToPairsWrapAround l =
 
 type alias Circle = { center : Int, radius : Float }
 
-type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool }
+type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool, circles : List Circle }
 
 type Update =
     Reset
@@ -116,7 +116,7 @@ legalNextPoint model point =
         not (List.any (intersects newSegment) segments)
 
 initialModel : Model
-initialModel = {drawn = [], next = (0,0), closed = False, firstPoint = Nothing}
+initialModel = {drawn = [], next = (0,0), closed = False, firstPoint = Nothing, circles = []}
 
 updateModel : Update -> Model -> Model
 updateModel update model = 
@@ -142,7 +142,7 @@ updateModel update model =
             if shouldClose
             then { model' | closed <- True }
             else
-              { drawn = update.cursor :: model'.drawn, next = update.cursor, closed = False, firstPoint = Just (Maybe.withDefault update.cursor model'.firstPoint) }
+              { drawn = update.cursor :: model'.drawn, next = update.cursor, closed = False, firstPoint = Just (Maybe.withDefault update.cursor model'.firstPoint), circles = [] }
 
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
