@@ -72,8 +72,6 @@ sqrDistanceToSegment (v, w) p =
        | t > 1 -> dist2 p w
        | otherwise -> dist2 p (fst v + t * (fst w - fst v), snd v + t * (snd w - snd v))
 
-type alias Circle = { center : Int, radius : Float }
-
 listToPairs : List a -> List (a,a)
 listToPairs l =
   case l of
@@ -88,6 +86,8 @@ listToPairsWrapAround l =
     x::_::_ ->
     let last = List.head (List.reverse l) in
     (last,x) :: listToPairs l
+
+type alias Circle = { center : Int, radius : Float }
 
 type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool }
 
@@ -186,7 +186,7 @@ toElement model { width, height } =
 port reset : Signal () 
 
 updates : Signal Update
-updates = Signal.merge (Signal.map (\() -> Reset) reset) (Signal.merge (Signal.map (\point -> Update {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> Update {cursor=point, clicked=False}) (Signal.sampleOn (Time.every (10 * Time.millisecond)) Mouse.position)))
+updates = Signal.merge (Signal.map (\() -> Reset) reset) (Signal.merge (Signal.map (\point -> Update {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> Update {cursor=point, clicked=False}) (Signal.sampleOn (Time.fps 60) Mouse.position)))
 
 models : Signal Model
 models = Signal.foldp updateModel initialModel updates 
