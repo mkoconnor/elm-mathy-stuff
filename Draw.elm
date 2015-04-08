@@ -8,7 +8,7 @@ import Mouse
 import Window
 import Maybe
 import Time
-
+import Debug
 type alias Point = (Int, Int)
 
 type Turn = 
@@ -120,14 +120,21 @@ biggestCircleAround : Model -> Point -> Circle
 biggestCircleAround model point = 
   let toFloatPoint (x,y) = (toFloat x, toFloat y) in
   let allSegments = listToPairsWrapAround model.drawn in
-  let minSegmentDistance = List.minimum (List.map (\(v,w) -> sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next)) allSegments) in
-  let minCircleDistance = List.minimum (List.map (\circle ->
-    let distToCenter = 
-       sqrt (toFloat (sqr (fst circle.center - fst point) + sqr (snd circle.center - snd point)))
-    in
-    abs (distToCenter - circle.radius)) model.circles)
+  let minSegmentDistance = sqrt (List.minimum (List.map (\(v,w) -> sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next)) allSegments) ) in
+  let radius =
+     case model.circles of
+         [] -> minSegmentDistance
+         _ :: _ ->
+            let minCircleDistance = 
+              List.minimum (List.map (\circle ->
+                let distToCenter = 
+                   sqrt (toFloat (sqr (fst circle.center - fst point) + sqr (snd circle.center - snd point)))
+                in
+                abs (distToCenter - circle.radius)) model.circles)
+              in
+              min minSegmentDistance minCircleDistance
   in
-  { center = point, radius = min (sqrt minSegmentDistance) minCircleDistance }
+  { center = point, radius = radius }
 
 initialModel : Model
 initialModel = {drawn = [], next = (0,0), closed = False, firstPoint = Nothing, circles = []}
@@ -170,7 +177,7 @@ toElement model { width, height } =
       let circle = biggestCircleAround model model.next in
       let circleForm = C.circle circle.radius in
       let moveToPoint = C.move (toFloatPoint circle.center) in
-      [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn]), moveToPoint (C.filled Color.lightGreen circle), moveToPoint (C.outlined (C.solid Color.black) circle)]
+      [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn]), moveToPoint (C.filled Color.lightGreen circleForm), moveToPoint (C.outlined (C.solid Color.black) circleForm)]
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
       let next =
