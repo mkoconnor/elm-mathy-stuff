@@ -74,7 +74,9 @@ listToPairsWrapAround l =
 
 type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool }
 
-type alias Update = { cursor:Point, clicked: Bool }
+type Update =
+    Reset
+  | Update { cursor:Point, clicked: Bool }
 
 hitRadius = 5
 
@@ -96,28 +98,34 @@ legalNextPoint model point =
         let newSegment = (lastPoint, point) in
         not (List.any (intersects newSegment) segments)
 
+initialModel : Model
+initialModel = {drawn = [], next = (0,0), closed = False, firstPoint = Nothing}
+
 updateModel : Update -> Model -> Model
 updateModel update model = 
-  if model.closed
-  then model
-  else
-  let model' = { model | next <- update.cursor } in
-  if not update.clicked
-  then model'
-  else 
-    if not (legalNextPoint model' update.cursor)
-    then model'
-    else 
-      let shouldClose =
-         case model'.firstPoint of
-            Nothing -> False
-            Just firstPoint ->
-              abs (fst update.cursor - fst firstPoint) < hitRadius && abs (snd update.cursor - snd firstPoint) < hitRadius
-      in
-      if shouldClose
-      then { model' | closed <- True }
-      else
-        { drawn = update.cursor :: model'.drawn, next = update.cursor, closed = False, firstPoint = Just (Maybe.withDefault update.cursor model'.firstPoint) }
+  case update of
+     Reset -> initialModel
+     Update update -> 
+        if model.closed
+        then model
+        else
+        let model' = { model | next <- update.cursor } in
+        if not update.clicked
+        then model'
+        else 
+          if not (legalNextPoint model' update.cursor)
+          then model'
+          else 
+            let shouldClose =
+               case model'.firstPoint of
+                  Nothing -> False
+                  Just firstPoint ->
+                    abs (fst update.cursor - fst firstPoint) < hitRadius && abs (snd update.cursor - snd firstPoint) < hitRadius
+            in
+            if shouldClose
+            then { model' | closed <- True }
+            else
+              { drawn = update.cursor :: model'.drawn, next = update.cursor, closed = False, firstPoint = Just (Maybe.withDefault update.cursor model'.firstPoint) }
 
 toElement : Model -> {width : Int, height: Int} -> E.Element
 toElement model { width, height } =
@@ -147,10 +155,12 @@ toElement model { width, height } =
    in
    C.collage width height forms
 
+-- port reset : Signal () 
+reset = Signal.constant () 
 updates : Signal Update
-updates = Signal.merge (Signal.map (\point -> {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> {cursor=point, clicked=False}) (Signal.sampleOn (Time.every (10 * Time.millisecond)) Mouse.position))
+updates = Signal.merge (Signal.map (\() -> Reset) reset) (Signal.merge (Signal.map (\point -> Update {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> Update {cursor=point, clicked=False}) (Signal.sampleOn (Time.every (10 * Time.millisecond)) Mouse.position)))
 
 models : Signal Model
-models = Signal.foldp updateModel {drawn = [], next = (0,0), closed = False, firstPoint = Nothing} updates
+models = Signal.foldp updateModel initialModel updates 
 
 main = Signal.map2 (\model (width, height) -> toElement model {width=width,height=height}) models Window.dimensions
