@@ -1,5 +1,5 @@
 module Draw where
-
+import Debug
 import Signal
 import Graphics.Collage as C
 import Graphics.Element as E
@@ -57,6 +57,22 @@ intersects (ap,aq) (bp, bq) =
       oneDimIntersect (fst ap, fst aq) (fst bp, fst bq)
       && oneDimIntersect (snd ap, snd aq) (snd bp, snd bq)
 
+-- http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+sqrDistanceToSegment : ((Float,Float),(Float,Float)) -> (Float,Float) -> Float
+sqrDistanceToSegment (v, w) p =
+  let sqr x = x * x in
+  let dist2 (vx, vy) (wx, wy) = sqr (vx - wx) + sqr (vy - wy) in
+  let l2 = Debug.log "l2" (dist2 v w) in
+  if l2 == 0
+  then dist2 p v
+  else
+    let
+      t = ((fst p - fst v) * (fst w - fst v) + (snd p - snd v) * (snd w - snd v)) / l2
+    in
+    if | t < 0 -> dist2 p v
+       | t > 1 -> dist2 p w
+       | otherwise -> dist2 p (fst v + t * (fst w - fst v), snd v + t * (snd w - snd v))
+
 type alias Circle = { center : Int, radius : Float }
 
 listToPairs : List a -> List (a,a)
@@ -109,7 +125,7 @@ updateModel update model =
      Reset -> initialModel
      Update update -> 
         if model.closed
-        then model
+        then { model | next <- update.cursor }
         else
         let model' = { model | next <- update.cursor } in
         if not update.clicked
@@ -137,7 +153,12 @@ toElement model { width, height } =
   let floatDrawn = List.map toFloatPoint model.drawn in
   let forms = 
     if model.closed
-    then [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn])]
+    then
+      let allSegments = listToPairsWrapAround model.drawn in
+      let minDistance = List.minimum (List.map (\(v,w) -> sqrt (sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next))) allSegments) in
+      let circle = C.circle (Debug.log "minDistance" minDistance) in
+      let moveToPoint = C.move (toFloatPoint model.next) in
+      List.map (C.alpha 0.75) [moveToPoint (C.filled Color.lightGreen circle), moveToPoint (C.outlined (C.solid Color.black) circle), C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn])]
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
       let next =
