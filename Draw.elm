@@ -143,7 +143,13 @@ toElement model { width, height } =
       let next =
         case floatDrawn of
            [] -> []
-           lastPoint :: _ -> [C.traced (C.dashed Color.black) (C.segment lastPoint (toFloatPoint model.next))]
+           lastPoint :: _ ->
+              let color =
+                if legalNextPoint model model.next
+                then Color.black
+                else Color.red
+              in
+              [C.traced (C.dashed color) (C.segment lastPoint (toFloatPoint model.next))]
       in    
       let first =
          let circle point color = 
