@@ -1,5 +1,4 @@
 module Draw where
-import Debug
 import Signal
 import Graphics.Collage as C
 import Graphics.Element as E
@@ -62,7 +61,7 @@ sqrDistanceToSegment : ((Float,Float),(Float,Float)) -> (Float,Float) -> Float
 sqrDistanceToSegment (v, w) p =
   let sqr x = x * x in
   let dist2 (vx, vy) (wx, wy) = sqr (vx - wx) + sqr (vy - wy) in
-  let l2 = Debug.log "l2" (dist2 v w) in
+  let l2 = dist2 v w in
   if l2 == 0
   then dist2 p v
   else
@@ -156,9 +155,9 @@ toElement model { width, height } =
     then
       let allSegments = listToPairsWrapAround model.drawn in
       let minDistance = List.minimum (List.map (\(v,w) -> sqrt (sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next))) allSegments) in
-      let circle = C.circle (Debug.log "minDistance" minDistance) in
+      let circle = C.circle minDistance in
       let moveToPoint = C.move (toFloatPoint model.next) in
-      List.map (C.alpha 0.75) [moveToPoint (C.filled Color.lightGreen circle), moveToPoint (C.outlined (C.solid Color.black) circle), C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn])]
+      [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn]), moveToPoint (C.filled Color.lightGreen circle), moveToPoint (C.outlined (C.solid Color.black) circle)]
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
       let next =
