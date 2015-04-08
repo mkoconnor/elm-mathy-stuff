@@ -1,3 +1,5 @@
+module Draw where
+
 import Signal
 import Graphics.Collage as C
 import Graphics.Element as E
@@ -155,8 +157,8 @@ toElement model { width, height } =
    in
    C.collage width height forms
 
--- port reset : Signal () 
-reset = Signal.constant () 
+port reset : Signal () 
+
 updates : Signal Update
 updates = Signal.merge (Signal.map (\() -> Reset) reset) (Signal.merge (Signal.map (\point -> Update {cursor=point, clicked = True}) (Signal.sampleOn Mouse.clicks Mouse.position)) (Signal.map (\point -> Update {cursor=point, clicked=False}) (Signal.sampleOn (Time.every (10 * Time.millisecond)) Mouse.position)))
 
