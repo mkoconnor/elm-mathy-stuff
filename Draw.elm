@@ -56,10 +56,11 @@ intersects (ap,aq) (bp, bq) =
       oneDimIntersect (fst ap, fst aq) (fst bp, fst bq)
       && oneDimIntersect (snd ap, snd aq) (snd bp, snd bq)
 
+sqr x = x * x
+
 -- http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
 sqrDistanceToSegment : ((Float,Float),(Float,Float)) -> (Float,Float) -> Float
 sqrDistanceToSegment (v, w) p =
-  let sqr x = x * x in
   let dist2 (vx, vy) (wx, wy) = sqr (vx - wx) + sqr (vy - wy) in
   let l2 = dist2 v w in
   if l2 == 0
@@ -87,7 +88,7 @@ listToPairsWrapAround l =
     let last = List.head (List.reverse l) in
     (last,x) :: listToPairs l
 
-type alias Circle = { center : Int, radius : Float }
+type alias Circle = { center : Point, radius : Float }
 
 type alias Model = { drawn:List Point, firstPoint : Maybe Point, next:Point, closed:Bool, circles : List Circle }
 
@@ -114,6 +115,19 @@ legalNextPoint model point =
         let segments = listToPairs earlierPoints in
         let newSegment = (lastPoint, point) in
         not (List.any (intersects newSegment) segments)
+
+biggestCircleAround : Model -> Point -> Circle
+biggestCircleAround model point = 
+  let toFloatPoint (x,y) = (toFloat x, toFloat y) in
+  let allSegments = listToPairsWrapAround model.drawn in
+  let minSegmentDistance = List.minimum (List.map (\(v,w) -> sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next)) allSegments) in
+  let minCircleDistance = List.minimum (List.map (\circle ->
+    let distToCenter = 
+       sqrt (toFloat (sqr (fst circle.center - fst point) + sqr (snd circle.center - snd point)))
+    in
+    abs (distToCenter - circle.radius)) model.circles)
+  in
+  { center = point, radius = min (sqrt minSegmentDistance) minCircleDistance }
 
 initialModel : Model
 initialModel = {drawn = [], next = (0,0), closed = False, firstPoint = Nothing, circles = []}
