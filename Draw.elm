@@ -145,7 +145,11 @@ updateModel update model =
      Reset -> initialModel
      Update update -> 
         if model.closed
-        then { model | next <- update.cursor }
+        then (
+          if not update.clicked
+          then { model | next <- update.cursor }
+          else { model | next <- update.cursor, circles <- biggestCircleAround model update.cursor :: model.circles }
+          )
         else
         let model' = { model | next <- update.cursor } in
         if not update.clicked
