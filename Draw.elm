@@ -175,13 +175,19 @@ toElement model { width, height } =
     (toFloat x - (toFloat width)/2, (toFloat height)/2 - toFloat y)
   in
   let floatDrawn = List.map toFloatPoint model.drawn in
+  let circleForms circle = 
+    let circleForm = C.circle circle.radius in
+    let moveToPoint = C.move (toFloatPoint circle.center) in
+    [moveToPoint (C.filled Color.lightGreen circleForm), moveToPoint (C.outlined (C.solid Color.black) circleForm)]
+  in
   let forms = 
     if model.closed
     then
       let circle = biggestCircleAround model model.next in
+      let allCircleForms = List.concatMap circleForms (List.reverse (circle :: model.circles)) in
       let circleForm = C.circle circle.radius in
       let moveToPoint = C.move (toFloatPoint circle.center) in
-      [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn]), moveToPoint (C.filled Color.lightGreen circleForm), moveToPoint (C.outlined (C.solid Color.black) circleForm)]
+      List.append [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn])] allCircleForms
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
       let next =
