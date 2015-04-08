@@ -167,10 +167,9 @@ toElement model { width, height } =
   let forms = 
     if model.closed
     then
-      let allSegments = listToPairsWrapAround model.drawn in
-      let minDistance = List.minimum (List.map (\(v,w) -> sqrt (sqrDistanceToSegment (toFloatPoint v,toFloatPoint w) (toFloatPoint model.next))) allSegments) in
-      let circle = C.circle minDistance in
-      let moveToPoint = C.move (toFloatPoint model.next) in
+      let circle = biggestCircleAround model model.next in
+      let circleForm = C.circle circle.radius in
+      let moveToPoint = C.move (toFloatPoint circle.center) in
       [C.filled Color.lightBlue (C.polygon floatDrawn), C.traced (C.solid Color.black) (List.append floatDrawn [List.head floatDrawn]), moveToPoint (C.filled Color.lightGreen circle), moveToPoint (C.outlined (C.solid Color.black) circle)]
     else 
       let drawn = C.traced (C.solid Color.black) (C.path floatDrawn) in
