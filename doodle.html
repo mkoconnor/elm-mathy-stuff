@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Drawer</title>
+    <script type="text/javascript" src="doodle.js"></script>
+    <style>
+      #elm-doodle {
+        width: 600px;
+        height: 600px;
+        background-color: white;
+        border: 1px solid #babdb6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Doodle Game</h1>
+    Inspired by
+    a <a href="https://youtu.be/DK5Z709J2eo?t=1m30s">doodle game</a>
+    by <a href="https://www.youtube.com/channel/UCOGeU-1Fig3rrDjhm9Zs_wg">Vi Hart</a>.
+    <div id="elm-doodle"></div>
+    <button onclick="resetDoodle()">Reset</button>
+  </body>
+  <script type="text/javascript">
+    var div = document.getElementById('elm-doodle');
+    var elmDoodle = Elm.embed(Elm.Doodle, div, {reset:[]});
+    var resetDoodle = function () {
+       elmDoodle.ports.reset.send([]);
+    };
+  </script>
+</html>
