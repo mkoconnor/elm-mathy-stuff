@@ -1,4 +1,4 @@
-module Draw where
+module Doodle where
 import Signal
 import Graphics.Collage as C
 import Graphics.Element as E
