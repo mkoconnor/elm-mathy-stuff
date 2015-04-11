@@ -8,7 +8,6 @@ import Mouse
 import Window
 import Maybe
 import Time
-import Debug
 type alias Point = (Int, Int)
 
 type Turn = 
