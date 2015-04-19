@@ -8,8 +8,11 @@ import Signal
 import Window
 import Mouse
 
-positionDistance : (Int, Int) -> Float
-positionDistance (x,y) = sqrt (toFloat (x * x + y * y))
+positionDistance : (Float, Float) -> Float
+positionDistance (x,y) = sqrt (x * x + y * y)
+
+realMousePosition : Signal (Float, Float)
+realMousePosition = Signal.map2 (\(width,height) (x,y) -> (toFloat x - toFloat width/2,toFloat height/2 - toFloat y)) Window.dimensions Mouse.position
 
 mouseScaling : Signal Float
 mouseScaling =
@@ -32,7 +35,7 @@ mouseScaling =
           Nothing -> overallScalingPlusSinceDown
           Just pos -> (positionDistance position / positionDistance pos) * overallScaling
    in
-   (newFirstPos,newOverallScalingPlusSinceDown,newOverallScaling)) (Nothing,1,1) (Signal.map2 (\x y -> (x,y)) Mouse.isDown Mouse.position)
+   (newFirstPos,newOverallScalingPlusSinceDown,newOverallScaling)) (Nothing,1,1) (Signal.map2 (\x y -> (x,y)) Mouse.isDown realMousePosition)
    in
    Signal.map (\(_,y,_) -> y) s
 
