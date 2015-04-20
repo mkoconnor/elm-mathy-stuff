@@ -55,4 +55,4 @@ toElement { elapsedTime } { width, height, scaling } =
 models : Signal Model
 models = Signal.foldp (\timeSpan { elapsedTime } -> { elapsedTime = elapsedTime + timeSpan }) { elapsedTime = 0 } (Time.fps 60)
 
-main = Signal.map3 (\model (width,height) scaling -> toElement model {width=width,height=height,scaling=scaling}) models Window.dimensions mouseScaling
+main = Signal.map3 (\model (width,height) scaling -> toElement model {width=round (toFloat width/2),height=height,scaling=scaling}) models Window.dimensions mouseScaling
