@@ -11,8 +11,11 @@ import Mouse
 positionDistance : (Float, Float) -> Float
 positionDistance (x,y) = sqrt (x * x + y * y)
 
+scaledDimensions : Signal { width : Int, height : Int }
+scaledDimensions = Signal.map (\(width, height) -> { width = round (toFloat width / 2), height = height } ) Window.dimensions
+
 realMousePosition : Signal (Float, Float)
-realMousePosition = Signal.map2 (\(width,height) (x,y) -> (toFloat x - toFloat width/2,toFloat height/2 - toFloat y)) Window.dimensions Mouse.position
+realMousePosition = Signal.map2 (\{width,height} (x,y) -> (toFloat x - toFloat width/2,toFloat height/2 - toFloat y)) scaledDimensions Mouse.position
 
 mouseScaling : Signal Float
 mouseScaling =
@@ -55,4 +58,4 @@ toElement { elapsedTime } { width, height, scaling } =
 models : Signal Model
 models = Signal.foldp (\timeSpan { elapsedTime } -> { elapsedTime = elapsedTime + timeSpan }) { elapsedTime = 0 } (Time.fps 60)
 
-main = Signal.map3 (\model (width,height) scaling -> toElement model {width=round (toFloat width/2),height=height,scaling=scaling}) models Window.dimensions mouseScaling
+main = Signal.map3 (\model {width, height} scaling -> toElement model {width=width, height=height, scaling=scaling}) models scaledDimensions mouseScaling
