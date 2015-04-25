@@ -7,6 +7,7 @@ import Graphics.Element as E
 import Signal
 import Window
 import Mouse
+import Path
 
 positionDistance : (Float, Float) -> Float
 positionDistance (x,y) = sqrt (x * x + y * y)
@@ -44,7 +45,22 @@ mouseScaling =
 
 rotationsPerSecond = 1/4
 
-type alias Model = { elapsedTime : Time.Time }
+type alias Model = { elapsedTime : Time.Time, path : Path.Path, arcLength : Float, circleRadiusLength : Float }
+
+currentPoint : Model -> (Float, Float)
+currentPoint model =
+ (model.circleRadiusLength * cos model.arcLength, model.circleRadiusLength * sin model.arcLength)
+
+updateModel : Model -> { width : Int, height : Int, scaling : Float } -> Model
+updateModel model { scaling } = 
+  let minDim = min width height in
+  let newCircleRadiusLength = 0.9 * scaling * toFloat minDim / 2 in
+  let newArcLength = 2 * pi * Time.inSeconds model.elapsedTime * rotationsPerSecond in
+  let newModel = { model | circleRadiusLength <- newCircleRadiusLength, arcLength <- newArcLength }
+  in
+  let newPath = Path.addPoint model.path { coords = currentPoint newModel, timeAdded = model.elapsedTime } in
+  { newModel | path <- newPath }
+  
 
 toElement : Model -> {width : Int, height : Int, scaling: Float} -> E.Element
 toElement { elapsedTime } { width, height, scaling } =
