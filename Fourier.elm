@@ -69,10 +69,10 @@ toElement : Model -> { width : Int, height : Int } -> E.Element
 toElement model { width, height } = 
   let circle = C.outlined (C.solid Color.black) (C.circle model.circleRadiusLength) in
   let radius = C.traced (C.solid Color.black) (C.segment (0,0) (currentPoint model)) in
-  C.collage width height [circle, radius]
+  let path = Path.toForm model.path in
+  C.collage width height [circle, radius, path]
 
 models : Signal Model
 models = Signal.foldp (\(timeSpan, { width, height }, scaling) model -> updateModel model { width = width, height = height, scaling = scaling, timeSpan = timeSpan}) initialModel (Signal.map3 (\x y z -> (x,y,z)) (Time.fps 60) scaledDimensions mouseScaling)
   
-
 main = Signal.map2 (\model {width, height} -> toElement model {width=width, height=height}) models scaledDimensions

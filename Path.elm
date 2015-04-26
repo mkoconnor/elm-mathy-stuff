@@ -30,5 +30,5 @@ defaultLine = C.defaultLine
 
 toForm : Path -> C.Form
 toForm path =
-   C.traced { defaultLine | color <- Color.blue } (C.path (List.map (\point -> point.coords) path.points))
+   C.traced { defaultLine | color <- Color.blue, width <- 3 } (C.path (List.map (\point -> point.coords) path.points))
 
