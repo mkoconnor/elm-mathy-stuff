@@ -54,28 +54,25 @@ currentPoint : Model -> (Float, Float)
 currentPoint model =
  (model.circleRadiusLength * cos model.arcLength, model.circleRadiusLength * sin model.arcLength)
 
-updateModel : Model -> { width : Int, height : Int, scaling : Float } -> Model
-updateModel model { scaling } = 
+updateModel : Model -> { width : Int, height : Int, scaling : Float, timeSpan : Time.Time } -> Model
+updateModel model { width, height, scaling, timeSpan } = 
   let minDim = min width height in
   let newCircleRadiusLength = 0.9 * scaling * toFloat minDim / 2 in
-  let newArcLength = 2 * pi * Time.inSeconds model.elapsedTime * rotationsPerSecond in
-  let newModel = { model | circleRadiusLength <- newCircleRadiusLength, arcLength <- newArcLength }
+  let newElapsedTime = model.elapsedTime + timeSpan in
+  let newArcLength = 2 * pi * Time.inSeconds newElapsedTime * rotationsPerSecond in
+  let newModel = { model | circleRadiusLength <- newCircleRadiusLength, arcLength <- newArcLength, elapsedTime <- newElapsedTime }
   in
   let newPath = Path.pruneOld (Path.addPoint model.path { coords = currentPoint newModel, timeAdded = model.elapsedTime }) in
   { newModel | path <- newPath }
   
-toElement : Model { width : Int, height : Int } -> E.Element
+toElement : Model -> { width : Int, height : Int } -> E.Element
 toElement model { width, height } = 
   let circle = C.outlined (C.solid Color.black) (C.circle model.circleRadiusLength) in
   let radius = C.traced (C.solid Color.black) (C.segment (0,0) (currentPoint model)) in
   C.collage width height [circle, radius]
 
-elapsedTime : Signal { elapsedTime : Time.Time }
-elapsedTime =
-  Signal.foldp (\timeSpan { elapsedTime } -> { elapsedTime = elapsedTime + timeSpan }) { elapsedTime = 0 } (Time.fps 60)
-
 models : Signal Model
-models = Signal.foldp (\({ elapsedTime }, { width, height }, { scaling }) model -> updateModel model { width = width, height = height, scaling = scaling }) initialModel (Signal.map3 (\x y z -> (x,y,z)) elapsedTime scaledDimensions mouseScaling)
+models = Signal.foldp (\(timeSpan, { width, height }, scaling) model -> updateModel model { width = width, height = height, scaling = scaling, timeSpan = timeSpan}) initialModel (Signal.map3 (\x y z -> (x,y,z)) (Time.fps 60) scaledDimensions mouseScaling)
   
 
-main = Signal.map2 models (\model {width, height} -> toElement model {width=width, height=height}) models scaledDimensions
+main = Signal.map2 (\model {width, height} -> toElement model {width=width, height=height}) models scaledDimensions
